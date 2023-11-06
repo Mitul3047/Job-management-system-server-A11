@@ -23,16 +23,23 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+        // await client.connect();
 
         const postedJobCollection = client.db("jobManagemnetDB").collection("postedJob")
+        const biddingCollection = client.db("jobManagemnetDB").collection("bidding")
 
 
 
-
+// post job
         app.get('/postedjobs', async (req, res) => {
             const cursor = postedJobCollection.find();
             const result = await cursor.toArray();
+            res.send(result)
+        })
+        app.get('/postedjobs/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = {_id: new ObjectId(id)}
+            const result = await postedJobCollection.findOne(query)
             res.send(result)
         })
         app.post('/postedjobs', async (req, res) => {
@@ -42,16 +49,66 @@ async function run() {
             res.send(result);
         });
 
-        app.get('/postedjobs/:jobCategory', async (req, res) => {
-            const jobCategory = req.params.jobCategory;
-            console.log('brand name', jobCategory);
-            const query = { brand_name: { $regex: new RegExp(jobCategory, 'i') } };
-            const result = await postedJobCollection.find(query);
-
+        app.delete('/postedjobs/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log(id);
+            const query = { _id: new ObjectId(id) }
+            const result = await postedJobCollection.deleteOne(query);
             res.send(result);
-            console.log('brand name res', result);
+            
+        })
+        app.put('/postedjobs/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) }
+            const options = { upsert: true }
+            const updatedPostedJob = req.body;
+            const product = {
+                $set: {
+                    email: updatedPostedJob.email,
+                    jobTitle: updatedPostedJob.jobTitle,
+                    description: updatedPostedJob.description,
+                    jobCategory: updatedPostedJob.jobCategory,
+                    description: updatedPostedJob.description,
+                    deadline: updatedPostedJob.deadline,
+                    maxPrice: updatedPostedJob.maxPrice,
+                    minPrice: updatedPostedJob.minPrice
+
+
+                }
+            }
+            const result = await postedJobCollection.updateOne(filter, product, options)
+            res.send(result);
         })
 
+        // bidding
+
+        app.get('/bid', async (req, res) => {
+            console.log(req.query.email);
+            let query ={};
+            if (req.query?.email) {
+                query = {email: req.query.email}
+            }
+            const cursor = biddingCollection.find(query);
+            const result = await cursor.toArray();
+            res.send(result)
+        })
+
+        app.post('/bid', async (req, res) => {
+            const bid = req.body;
+            console.log(bid);
+            const result = await biddingCollection.insertOne(bid);
+            res.send(result);
+        });
+
+        
+        
+        app.delete('/bid/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log(id);
+            const query = { _id: new ObjectId(id) }
+            const result = await biddingCollection.deleteOne(query);
+            res.send(result);
+        })
 
 
 
