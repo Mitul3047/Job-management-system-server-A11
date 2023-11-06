@@ -8,7 +8,13 @@ const app = express();
 const port = process.env.PORT || 7000; // Use process.env.PORT or default to 3000
 
 
-app.use(cors());
+app.use(cors({
+    origin: [
+        'http://localhost:5173',
+        'http://localhost:5174'
+    ],
+    credentials: true
+}));
 app.use(express.json());
 
 
@@ -34,35 +40,35 @@ async function run() {
 
 
        //auth related api jwt
-    //    app.post('/jwt', async (req, res) => {
-    //     const user = req.body;
-    //     console.log('user for token', user);
-    //     // const token = jwt.sign(user, 'secret' , { expiresIn: '1h' });
-    //     // type node at terminal
-    //     // require('crypto').randomBytes(64).toString('hex')
-    //     // npm i cookie-parser
-    //     const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET,
-    //         {
-    //             expiresIn: '1h'
-    //         })
-    //     console.log(token)
-    //     // res.send({ token });
-    //     // res.send(token)
-    //     // after cookie install
-    //     res.cookie('token', token, {
-    //         httpOnly: true,
-    //         secure: true,
-    //         sameSite: 'none'
-    //     })
-    //         .send({ success: true });
-    // })
-
-    app.post('/jwt', async(req , res) =>{
+       app.post('/jwt', async (req, res) => {
         const user = req.body;
-        console.log(user);
-        const token = jwt.sign(user,process.env.ACCESS_TOKEN, {expiresIn: '1h'})
-        res.send(token)
+        console.log('user for token', user);
+        // const token = jwt.sign(user, 'secret' , { expiresIn: '1h' });
+        // type node at terminal
+        // require('crypto').randomBytes(64).toString('hex')
+        // npm i cookie-parser
+        const token = jwt.sign(user, process.env.ACCESS_TOKEN,
+            {
+                expiresIn: '1h'
+            })
+        console.log(token)
+        // res.send({ token });
+        // res.send(token)
+        // after cookie install
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'none'
+        })
+            .send({ success: true });
     })
+
+    // app.post('/jwt', async(req , res) =>{
+    //     const user = req.body;
+    //     console.log(user);
+    //     const token = jwt.sign(user,process.env.ACCESS_TOKEN, {expiresIn: '1h'})
+    //     res.send(token)
+    // })
 
 // post job
         app.get('/postedjobs', async (req, res) => {
@@ -116,15 +122,18 @@ async function run() {
 
         // bidding
 
-        app.get('/bid', async (req, res) => {
-            // console.log(req.query.email);
-            let query ={};
-            if (req.query?.email) {
-                query = {email: req.query.email}
+        app.get('/bookings', async (req, res) => {
+            console.log(req.query.email);
+            console.log('token owner info', req.user)
+            if(req.user.email !== req.query.email){
+                return res.status(403).send({message: 'forbidden access'})
             }
-            const cursor = biddingCollection.find(query);
-            const result = await cursor.toArray();
-            res.send(result)
+            let query = {};
+            if (req.query?.email) {
+                query = { email: req.query.email }
+            }
+            const result = await bookingCollection.find(query).toArray();
+            res.send(result);
         })
 
         app.post('/bid', async (req, res) => {
