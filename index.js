@@ -1,13 +1,17 @@
 
 const express = require('express');
 const cors = require('cors');
+var jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const app = express();
 const port = process.env.PORT || 7000; // Use process.env.PORT or default to 3000
 
+
 app.use(cors());
 app.use(express.json());
+
+
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.zkhcmhi.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -29,6 +33,36 @@ async function run() {
         const biddingCollection = client.db("jobManagemnetDB").collection("bidding")
 
 
+       //auth related api jwt
+    //    app.post('/jwt', async (req, res) => {
+    //     const user = req.body;
+    //     console.log('user for token', user);
+    //     // const token = jwt.sign(user, 'secret' , { expiresIn: '1h' });
+    //     // type node at terminal
+    //     // require('crypto').randomBytes(64).toString('hex')
+    //     // npm i cookie-parser
+    //     const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET,
+    //         {
+    //             expiresIn: '1h'
+    //         })
+    //     console.log(token)
+    //     // res.send({ token });
+    //     // res.send(token)
+    //     // after cookie install
+    //     res.cookie('token', token, {
+    //         httpOnly: true,
+    //         secure: true,
+    //         sameSite: 'none'
+    //     })
+    //         .send({ success: true });
+    // })
+
+    app.post('/jwt', async(req , res) =>{
+        const user = req.body;
+        console.log(user);
+        const token = jwt.sign(user,process.env.ACCESS_TOKEN, {expiresIn: '1h'})
+        res.send(token)
+    })
 
 // post job
         app.get('/postedjobs', async (req, res) => {
@@ -83,7 +117,7 @@ async function run() {
         // bidding
 
         app.get('/bid', async (req, res) => {
-            console.log(req.query.email);
+            // console.log(req.query.email);
             let query ={};
             if (req.query?.email) {
                 query = {email: req.query.email}
