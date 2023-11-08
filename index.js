@@ -2,16 +2,18 @@
 const express = require('express');
 const cors = require('cors');
 var jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const app = express();
+app.use(cookieParser())
 const port = process.env.PORT || 7000; // Use process.env.PORT or default to 3000
 
 
 app.use(cors({
     origin: [
-        'http://localhost:5173',
-        'http://localhost:5174'
+        'https://job-management-auth.web.app/',
+        'https://i.ibb.co/x6FVJQK/Green-Tones-Catering-Logo-1.png'
     ],
     credentials: true
 }));
@@ -29,6 +31,29 @@ const client = new MongoClient(uri, {
         deprecationErrors: true,
     }
 });
+// middleWare
+const logger = (req, res, next) =>{
+    console.log('log: info', req.method, req.url);
+    next();
+}
+
+const verifyToken = (req, res, next) =>{
+    const token = req?.cookies?.token;
+    console.log('token in the middleware', token);
+    // no token available 
+    if(!token){
+        return res.status(401).send({message: 'unauthorized access'})
+    }
+    jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) =>{
+        if(err){
+            console.log(err);
+            return res.status(401).send({message: 'unauthorized access'})
+        }
+        req.user = decoded;
+        next();
+    })
+}
+
 
 async function run() {
     try {
@@ -40,21 +65,14 @@ async function run() {
 
 
        //auth related api jwt
-       app.post('/jwt', async (req, res) => {
+       app.post('/jwt', logger, async (req, res) => {
         const user = req.body;
         console.log('user for token', user);
-        // const token = jwt.sign(user, 'secret' , { expiresIn: '1h' });
-        // type node at terminal
-        // require('crypto').randomBytes(64).toString('hex')
-        // npm i cookie-parser
         const token = jwt.sign(user, process.env.ACCESS_TOKEN,
             {
                 expiresIn: '1h'
             })
         console.log(token)
-        // res.send({ token });
-        // res.send(token)
-        // after cookie install
         res.cookie('token', token, {
             httpOnly: true,
             secure: true,
@@ -71,12 +89,12 @@ async function run() {
     // })
 
 // post job
-        app.get('/postedjobs', async (req, res) => {
+        app.get('/postedjobs',logger, async (req, res) => {
             const cursor = postedJobCollection.find();
             const result = await cursor.toArray();
             res.send(result)
         })
-        app.get('/postedjobs/:id', async (req, res) => {
+        app.get('/postedjobs/:id',logger, async (req, res) => {
             const id = req.params.id;
             const query = {_id: new ObjectId(id)}
             const result = await postedJobCollection.findOne(query)
@@ -122,8 +140,9 @@ async function run() {
 
         // bidding
 
-        app.get('/bid', async (req, res) => {
-            // console.log(req.query.email);
+        app.get('/bid',logger, async (req, res) => {  //verifyToken,
+            console.log('mail2',req.query.email);
+            console.log('tok tok ', req.cookies.token);
             let query ={};
             if (req.query?.email) {
                 query = {email: req.query.email}
@@ -180,7 +199,7 @@ run().catch(console.dir);
 
 
 app.get('/', (req, res) => {
-    res.send('Hello from tech guru server side!')
+    res.send('Hello from the job management server  side!')
 })
 
 app.listen(port, () => {
