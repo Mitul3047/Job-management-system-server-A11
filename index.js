@@ -30,29 +30,6 @@ const client = new MongoClient(uri, {
     }
 });
 
-// my_middleWares
-// middlewares 
-const logger = (req, res, next) =>{
-    console.log('log: info', req.method, req.url);
-    next();
-}
-
-const verifyToken = (req, res, next) =>{
-    const token = req?.cookies?.token;
-    // console.log('token in the middleware', token);
-    // no token available 
-    if(!token){
-        return res.status(401).send({message: 'unauthorized access'})
-    }
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) =>{
-        if(err){
-            return res.status(401).send({message: 'unauthorized access'})
-        }
-        req.user = decoded;
-        next();
-    })
-}
-
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
@@ -145,18 +122,15 @@ async function run() {
 
         // bidding
 
-        app.get('/bookings', async (req, res) => {
-            console.log(req.query.email);
-            console.log('token owner info', req.user)
-            if(req.user.email !== req.query.email){
-                return res.status(403).send({message: 'forbidden access'})
-            }
-            let query = {};
+        app.get('/bid', async (req, res) => {
+            // console.log(req.query.email);
+            let query ={};
             if (req.query?.email) {
-                query = { email: req.query.email }
+                query = {email: req.query.email}
             }
-            const result = await bookingCollection.find(query).toArray();
-            res.send(result);
+            const cursor = biddingCollection.find(query);
+            const result = await cursor.toArray();
+            res.send(result)
         })
 
         app.post('/bid', async (req, res) => {
@@ -165,7 +139,19 @@ async function run() {
             const result = await biddingCollection.insertOne(bid);
             res.send(result);
         });
-
+        app.patch('/bid/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const updatedBiding = req.body;
+            console.log(updatedBiding);
+            const updateDoc = {
+                $set: {
+                    status: updatedBiding.status
+                },
+            };
+            const result = await biddingCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        })
         
         
         app.delete('/bid/:id', async (req, res) => {
