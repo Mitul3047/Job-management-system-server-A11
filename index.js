@@ -12,8 +12,8 @@ const port = process.env.PORT || 7000; // Use process.env.PORT or default to 300
 
 app.use(cors({
     origin: [
-        'https://job-management-auth.web.app/',
-        'https://i.ibb.co/x6FVJQK/Green-Tones-Catering-Logo-1.png'
+        'https://job-management-auth.web.app',
+        'https://job-management-auth.firebaseapp.com'
     ],
     credentials: true
 }));
@@ -62,6 +62,7 @@ async function run() {
 
         const postedJobCollection = client.db("jobManagemnetDB").collection("postedJob")
         const biddingCollection = client.db("jobManagemnetDB").collection("bidding")
+        const usersCollection = client.db("jobManagemnetDB").collection("users")
 
 
        //auth related api jwt
@@ -88,6 +89,25 @@ async function run() {
     //     res.send(token)
     // })
 
+
+    // user
+    app.get('/users', async (req, res) => {
+        const cursor = usersCollection.find();
+        const result = await cursor.toArray();
+        res.send(result)
+    })
+    app.get('/users/:id', async (req, res) => {
+        const id = req.params.id;
+        const query = {_id: new ObjectId(id)}
+        const result = await usersCollection.findOne(query)
+        res.send(result)
+    })
+    app.post('/users', async (req, res) => {
+        const newUser = req.body;
+        console.log(newUser);
+        const result = await usersCollection.insertOne(newUser);
+        res.send(result);
+    });
 // post job
         app.get('/postedjobs',logger, async (req, res) => {
             const cursor = postedJobCollection.find();
@@ -199,7 +219,7 @@ run().catch(console.dir);
 
 
 app.get('/', (req, res) => {
-    res.send('Hello from the job management server  side!')
+    res.send('Hello from the job management server .. side!')
 })
 
 app.listen(port, () => {
